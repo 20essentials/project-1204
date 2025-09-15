@@ -1,0 +1,93 @@
+<section>
+  <div class='bg'></div>
+  <h1>Tweening parallax sections</h1>
+</section>
+<section>
+  <div class='bg'></div>
+  <h1>Hey look, a title</h1>
+</section>
+<section>
+  <div class='bg'></div>
+  <h1>They just keep coming</h1>
+</section>
+<section>
+  <div class='bg'></div>
+  <h1>So smooth though</h1>
+</section>
+<section>
+  <div class='bg'></div>
+  <h1>Nice, right?</h1>
+</section>
+
+<script>
+  import { baseUrl } from '@/utils/functions';
+  import gsap from 'gsap';
+  import ScrollTrigger from 'gsap/ScrollTrigger';
+
+  // Registro del plugin
+  gsap.registerPlugin(ScrollTrigger);
+
+  type SectionElements = {
+    bg: HTMLElement;
+    h1: HTMLElement;
+    tl: gsap.core.Timeline;
+  };
+
+  // Usamos un Map para no mutar los elementos del DOM
+  const sectionData = new Map<HTMLElement, SectionElements>();
+
+  const sections = gsap.utils.toArray<HTMLElement>('section');
+  const lastIndex = sections.length - 1;
+
+  sections.forEach((section, i) => {
+    const bg = section.querySelector<HTMLElement>('.bg');
+    const h1 = section.querySelector<HTMLElement>('h1');
+
+    if (!bg || !h1) return;
+
+    bg.style.backgroundImage = `url("${baseUrl(`/assets/f${i + 1}.avif`)}")`;
+
+    // ScrollTrigger individual por sección
+    ScrollTrigger.create({
+      trigger: section,
+      start: () => (i === 0 ? 'top top' : 'top bottom'),
+      end: () => (i === lastIndex ? 'top top' : 'bottom top'),
+      onRefresh: self => {
+        const tl = gsap.timeline({
+          paused: true,
+          defaults: { ease: 'none', overwrite: 'auto' }
+        });
+
+        // Movimiento del título
+        tl.fromTo(
+          h1,
+          { y: i === 0 ? 0 : (window.innerHeight / 2) * 1.5 },
+          { y: i === lastIndex ? 0 : (-window.innerHeight / 2) * 1.5 },
+          0
+        );
+
+        // Movimiento del fondo
+        tl.fromTo(
+          bg,
+          { y: i === 0 ? -window.innerHeight / 2 : 0 },
+          { y: i === lastIndex ? -window.innerHeight / 2 : -window.innerHeight },
+          0
+        );
+
+        // Ajustar progreso al refrescar
+        tl.progress(self.progress);
+
+        sectionData.set(section, { bg, h1, tl });
+      },
+      onUpdate: self => {
+        const data = sectionData.get(section);
+        if (data?.tl) {
+          gsap.to(data.tl, {
+            duration: 0.75,
+            progress: self.progress
+          });
+        }
+      }
+    });
+  });
+</script>
